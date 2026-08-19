@@ -10,3 +10,4 @@ web/.next/
 .DS_Store
 *.tar.gz
 .Rhistory
+.pytest_cache/

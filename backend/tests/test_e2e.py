@@ -80,7 +80,18 @@ def test_full_flow():
     assert r.status_code == 200
     assert r.json()["status"] == "已确认"
 
-    # 9. 诊疗计划
+    # 8.1 回退到 r1
+    r = client.post(f"/api/patients/{pid}/visits/{vid}/documents/{doc_id}/revert",
+                    json={"revision": "r1"})
+    assert r.status_code == 200
+    assert r.json()["status"] == "草稿"  # 回退后回到草稿态
+
+    # 8.2 检查解读
+    r = client.post(f"/api/patients/{pid}/visits/{vid}/labs/review")
+    assert r.status_code == 200, r.text
+    assert r.json()["review"]
+
+    # 8.3 诊疗计划
     r = client.post(f"/api/patients/{pid}/visits/{vid}/suggestions/plan")
     assert r.status_code == 200, r.text
     plan = r.json()
