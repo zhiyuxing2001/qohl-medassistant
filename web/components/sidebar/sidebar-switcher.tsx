@@ -7,8 +7,10 @@ import {
   IconMessage,
   IconPencil,
   IconRobotFace,
-  IconSparkles
+  IconSparkles,
+  IconStethoscope
 } from "@tabler/icons-react"
+import Link from "next/link"
 import { FC } from "react"
 import { TabsList } from "../ui/tabs"
 import { WithTooltip } from "../ui/with-tooltip"
@@ -77,6 +79,18 @@ export const SidebarSwitcher: FC<SidebarSwitcherProps> = ({
       </TabsList>
 
       <div className="flex flex-col items-center space-y-4">
+        <WithTooltip
+          display={<div>医疗工作区</div>}
+          trigger={
+            <Link
+              href="/gi"
+              className="hover:bg-accent hover:text-accent-foreground flex size-10 items-center justify-center rounded-md"
+            >
+              <IconStethoscope size={SIDEBAR_ICON_SIZE} />
+            </Link>
+          }
+        />
+
         {/* TODO */}
         {/* <WithTooltip display={<div>Import</div>} trigger={<Import />} /> */}
 

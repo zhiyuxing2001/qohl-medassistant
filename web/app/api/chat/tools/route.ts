@@ -26,7 +26,14 @@ export async function POST(request: Request) {
 
     let allTools: OpenAI.Chat.Completions.ChatCompletionTool[] = []
     let allRouteMaps = {}
-    let schemaDetails = []
+    let schemaDetails: Array<{
+      title: string
+      description: string
+      url: string
+      headers: any
+      routeMap: Record<string, string>
+      requestInBody?: boolean
+    }> = []
 
     for (const selectedTool of selectedTools) {
       try {

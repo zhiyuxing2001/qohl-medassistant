@@ -113,7 +113,7 @@ export const useChatHandler = () => {
           | "local"
       })
 
-      let allFiles = []
+      let allFiles: any[] = []
 
       const assistantFiles = (
         await getAssistantFilesByAssistantId(selectedAssistant.id)
@@ -366,7 +366,7 @@ export const useChatHandler = () => {
 
       await handleCreateMessages(
         chatMessages,
-        currentChat,
+        currentChat!,
         profile!,
         modelData!,
         messageContent,

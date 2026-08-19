@@ -90,7 +90,7 @@ export async function buildFinalMessages(
     return chatMessage
   })
 
-  let finalMessages = []
+  let finalMessages: any[] = []
 
   for (let i = processedChatMessages.length - 1; i >= 0; i--) {
     const message = processedChatMessages[i].message
@@ -185,9 +185,9 @@ function buildRetrievalText(fileItems: Tables<"file_items">[]) {
 
 function adaptSingleMessageForGoogleGemini(message: any) {
 
-  let adaptedParts = []
+  let adaptedParts: any[] = []
 
-  let rawParts = []
+  let rawParts: any[] = []
   if(!Array.isArray(message.content)) {
     rawParts.push({type: 'text', text: message.content})
   } else {
@@ -246,7 +246,7 @@ export async function adaptMessagesForGoogleGemini(
   payload: ChatPayload,
   messages:  any[]
 ) {
-  let geminiMessages = []
+  let geminiMessages: any[] = []
   for (let i = 0; i < messages.length; i++) {
     let adaptedMessage = adaptSingleMessageForGoogleGemini(messages[i])
     geminiMessages.push(adaptedMessage)

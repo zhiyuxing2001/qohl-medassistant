@@ -122,7 +122,7 @@ export const createTempMessages = (
     fileItems: []
   }
 
-  let newMessages = []
+  let newMessages: ChatMessage[] = []
 
   if (isRegeneration) {
     const lastMessageIndex = chatMessages.length - 1

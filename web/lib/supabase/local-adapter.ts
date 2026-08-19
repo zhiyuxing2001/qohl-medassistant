@@ -383,13 +383,13 @@ const auth = {
   async signOut() {
     return { error: null }
   },
-  async updateUser() {
+  async updateUser(_attrs?: any) {
     return { data: { user: localUser }, error: null }
   },
   async resetPasswordForEmail() {
     return { error: null }
   },
-  async exchangeCodeForSession() {
+  async exchangeCodeForSession(_code?: string) {
     return { data: { session: localSession }, error: null }
   },
   onAuthStateChange(_cb: (event: string, session: any) => void) {
@@ -406,26 +406,27 @@ const auth = {
 // ---------------------------------------------------------------- storage 桩
 function storageBucket() {
   return {
-    async upload(path: string) {
+    async upload(path: string, _file?: any, _opts?: any) {
       return { data: { path }, error: null }
     },
-    async remove() {
+    async remove(paths: string[]) {
       return { error: null }
     },
-    async getPublicUrl(path: string) {
+    getPublicUrl(path: string) {
+      // supabase-js 的 getPublicUrl 是同步方法
       return { data: { publicUrl: "" }, error: null }
     },
-    async createSignedUrl() {
+    async createSignedUrl(path: string, _expiresIn?: number, _opts?: any) {
       return { data: { signedUrl: "" }, error: null }
     },
-    async download() {
+    async download(path: string) {
       return { data: null, error: null }
     }
   }
 }
 
 const storage = {
-  from() {
+  from(_bucket?: string) {
     return storageBucket()
   }
 }
