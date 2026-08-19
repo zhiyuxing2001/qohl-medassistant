@@ -38,14 +38,14 @@ LAB_LINE = re.compile(
 def _split_rest(rest: str) -> tuple[str, str, str]:
     """把 '10^9/L 3.5-9.5 ↑' 拆为 (单位, 参考范围, 异常标志)。
 
-    参考范围以包含 - ~ — – < > 的 token 识别；标志为行尾的 ↑/↓/H/L。
+    参考范围以包含 - ~ — – < > 的 token 识别；标志只在行尾（↑/↓/H/L）。
     """
+    rest = rest.strip()
     flag = ""
-    for f in ("↑", "H", "h", "↓", "L", "l"):
-        if f in rest:
-            flag = "↑" if f in ("↑", "H", "h") else "↓"
-            rest = rest.replace(f, "").strip()
-            break
+    if rest and rest[-1] in ("↑", "H", "h", "↓", "L", "l"):
+        last = rest[-1]
+        flag = "↑" if last in ("↑", "H", "h") else "↓"
+        rest = rest[:-1].strip()
     tokens = rest.split()
     ref = ""
     unit = ""

@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==> 启动 Mac 解析服务 (8001)"
-./.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8001 --app-dir mac_parse &
+./.venv/bin/uvicorn mac_parse.server:app --host 0.0.0.0 --port 8001 --app-dir . &
 PID_PARSE=$!
 
 echo "==> 启动后端 (8100, stub 模式；生产去掉 LLM_STUB=1)"
