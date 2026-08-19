@@ -214,3 +214,11 @@ def assemble_plan_messages(st: Storage, pid: str, vid: str, cutoff: str = "") ->
     )
     return [{"role": "system", "content": _load_prompt("system_base.md")},
             {"role": "user", "content": user}]
+
+
+def assemble_review_messages(st: Storage, pid: str, vid: str, cutoff: str = "") -> list[dict]:
+    """辅助检查解读：时间线 + labs_review 指令。"""
+    timeline = _timeline_block(st, pid, vid, cutoff, config.RECENT_LABS)
+    user = (f"【时间线资料】\n{timeline or '（无）'}\n\n{_load_prompt('labs_review.md')}")
+    return [{"role": "system", "content": _load_prompt("system_base.md")},
+            {"role": "user", "content": user}]

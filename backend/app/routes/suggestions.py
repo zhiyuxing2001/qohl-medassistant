@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 
 from .. import config
 from ..llm import CARE_PLAN_SCHEMA, complete
-from ..prompts import assemble_plan_messages
+from ..prompts import assemble_plan_messages, assemble_review_messages
 from ..storage import storage
 
 router = APIRouter(prefix="/api/patients/{pid}/visits/{vid}", tags=["suggestions"])
@@ -34,6 +34,14 @@ def set_status(pid: str, vid: str, sid: str, body: dict):
     if rec is None:
         raise HTTPException(404, "计划不存在")
     return rec
+
+
+# ---------------- 辅助检查解读 ----------------
+@router.post("/labs/review")
+def labs_review(pid: str, vid: str):
+    messages = assemble_review_messages(storage, pid, vid)
+    text = complete(messages, config.TEMP_DRAFT)
+    return {"review": text}
 
 
 # ---------------- 自由对话（visit 级，chatbot-ui 兼容） ----------------

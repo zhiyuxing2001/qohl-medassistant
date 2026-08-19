@@ -29,11 +29,34 @@ UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 app = FastAPI(title="GI Mac Parse Service", version="0.5")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# 检验行正则：项目 结果 单位 参考范围 标志(↑/↓)
+# 检验行正则：项目 + 数值 + 剩余部分（单位/参考范围/标志 启发式拆分）
 LAB_LINE = re.compile(
-    r"^(?P<name>[^\d]{1,24}?)\s*(?P<value>\d+(?:\.\d+)?)\s*"
-    r"(?P<unit>[A-Za-zμµ%/]+)?\s*(?P<ref>[\d.~\-—<>（）()]+)?\s*(?P<flag>[↑↓HhLl])?\s*$"
+    r"^(?P<name>[^\d]{1,24}?)\s*(?P<value>\d+(?:\.\d+)?)\s*(?P<rest>.*)$"
 )
+
+
+def _split_rest(rest: str) -> tuple[str, str, str]:
+    """把 '10^9/L 3.5-9.5 ↑' 拆为 (单位, 参考范围, 异常标志)。
+
+    参考范围以包含 - ~ — – < > 的 token 识别；标志为行尾的 ↑/↓/H/L。
+    """
+    flag = ""
+    for f in ("↑", "H", "h", "↓", "L", "l"):
+        if f in rest:
+            flag = "↑" if f in ("↑", "H", "h") else "↓"
+            rest = rest.replace(f, "").strip()
+            break
+    tokens = rest.split()
+    ref = ""
+    unit = ""
+    for i, t in enumerate(tokens):
+        if re.search(r"[-~—–<>]", t):
+            ref = t
+            unit = " ".join(tokens[:i])
+            break
+    if not ref:
+        unit = " ".join(tokens)
+    return unit, ref, flag
 
 
 def _parse_lab_text(text: str, base_conf: float = 0.7) -> list[dict]:
@@ -45,13 +68,14 @@ def _parse_lab_text(text: str, base_conf: float = 0.7) -> list[dict]:
             continue
         raw_name = m.group("name").strip().strip(":：")
         standard, conf = normalize_item_name(raw_name)
+        unit, ref, flag = _split_rest(m.group("rest").strip())
         items.append({
             "项目": standard,
             "原始项目名": raw_name,
             "结果": m.group("value"),
-            "单位": m.group("unit") or "",
-            "参考范围": m.group("ref") or "",
-            "异常标志": "↑" if m.group("flag") in ("↑", "H", "h") else ("↓" if m.group("flag") in ("↓", "L", "l") else ""),
+            "单位": unit,
+            "参考范围": ref,
+            "异常标志": flag,
             "置信度": round(min(conf, base_conf), 2),
         })
     return items
