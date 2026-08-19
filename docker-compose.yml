@@ -1,0 +1,42 @@
+# 服务器部署（H20 单卡）：vLLM 推理 + FastAPI 后端
+# 用法：docker compose up -d --build
+services:
+  inference:
+    image: vllm/vllm-openai:latest
+    container_name: gi-inference
+    command:
+      - --model=/models/DeepSeek-R1-Distill-Qwen-32B
+      - --dtype=bfloat16
+      - --gpu-memory-utilization=0.90
+      - --max-model-len=32768
+      - --served-model-name=gi-assistant
+      - --port=8000
+    volumes:
+      - /models:/models:ro          # 权重目录（见 scripts/download_model.sh）
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    container_name: gi-backend
+    environment:
+      VLLM_BASE_URL: http://inference:8000/v1
+      LLM_MODEL: gi-assistant
+      LLM_API_KEY: EMPTY
+      GI_DATA_DIR: /data
+    volumes:
+      - ./data:/data                 # 文件夹存储（JSON，无数据库）；备份=复制该目录
+    ports:
+      - "8100:8100"
+    depends_on:
+      - inference
+    restart: unless-stopped

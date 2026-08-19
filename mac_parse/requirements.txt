@@ -1,0 +1,8 @@
+# Mac 解析服务依赖（运行于 Mac，OCR 本地）
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+pdfplumber>=0.11
+PyMuPDF>=1.24
+pyobjc>=10.0
+python-multipart>=0.0.9

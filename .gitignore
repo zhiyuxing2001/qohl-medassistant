@@ -1,0 +1,11 @@
+# 数据（文件夹存储）——绝不提交，含患者数据
+data/
+# 依赖与环境
+.venv/
+__pycache__/
+*.pyc
+# Web
+web/node_modules/
+web/.next/
+.DS_Store
+*.tar.gz
