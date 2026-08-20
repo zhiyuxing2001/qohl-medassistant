@@ -75,10 +75,32 @@ function defaultWorkspace(): Row {
   }
 }
 
+function defaultAssistant(): Row {
+  return {
+    id: "local-assistant",
+    user_id: LOCAL_USER_ID,
+    workspace_id: LOCAL_WORKSPACE_ID,
+    name: "默认助手",
+    description: "默认 AI 助手",
+    model: "gpt-4-1106-preview",
+    prompt: "You are a helpful AI assistant.",
+    temperature: 0.5,
+    context_length: 4096,
+    include_profile_context: true,
+    include_workspace_instructions: true,
+    embeddings_provider: "openai",
+    image_path: "",
+    sharing: "private",
+    created_at: new Date().toISOString(),
+    updated_at: null
+  }
+}
+
 function defaultStore(): Store {
   return {
     profiles: [defaultProfile()],
-    workspaces: [defaultWorkspace()]
+    workspaces: [defaultWorkspace()],
+    assistants: [defaultAssistant()]
   }
 }
 
@@ -131,6 +153,9 @@ function ensureDefaults(store: Store): Store {
   if (!out.workspaces.some(w => w.id === LOCAL_WORKSPACE_ID)) {
     out.workspaces.push(defaultWorkspace())
   }
+  if (!Array.isArray(out.assistants) || out.assistants.length === 0) {
+    out.assistants = [defaultAssistant()]
+  }
   return out
 }
 
@@ -172,6 +197,7 @@ class QueryBuilder {
   private limitCount: number | null = null
   private singleMode: "none" | "maybe" | "single" = "none"
   private returnData: boolean = false
+  private selectCols: string | null = null
 
   constructor(table: string) {
     this.table = table
@@ -179,6 +205,7 @@ class QueryBuilder {
 
   select(_columns?: string): this {
     this.returnData = true
+    if (_columns) this.selectCols = _columns
     return this
   }
 
@@ -312,6 +339,9 @@ class QueryBuilder {
   private finish(source: Row[]): Result {
     let rows = source.filter(r => this.filters.every(f => f(r)))
 
+    // 嵌入关联：模拟 supabase 的 `child (*)` 关联查询
+    rows = this.embedRows(rows)
+
     for (const spec of this.orderSpecs) {
       const { field, ascending } = spec
       rows = [...rows].sort((a, b) => {
@@ -347,6 +377,39 @@ class QueryBuilder {
     }
 
     return { data: rows, error: null }
+  }
+
+  // 嵌入关联：`select("..., child (*)")` → 每行附加 child 数组
+  private embedRows(rows: Row[]): Row[] {
+    if (!this.selectCols) return rows
+    const embeds = this.selectCols.match(/[\w]+\s*\(\s*\*\s*\)/g) || []
+    if (embeds.length === 0) return rows
+    return rows.map(row => this.embedOne(row, embeds))
+  }
+
+  private embedOne(row: Row, embeds: string[]): Row {
+    const out: Row = { ...row }
+    const parentSingular = this.table.replace(/s$/, "")
+    for (const e of embeds) {
+      const name = e.replace(/\s*\(\s*\*\s*\)/, "").trim()
+      if (!name || name === this.table) continue
+      const childSingular = name.replace(/s$/, "")
+      const childRows = readTable(name)
+      // 一对多：child.{parent}_id 或 child.workspace_id 指向 row.id
+      let related = childRows.filter(
+        c => c[`${parentSingular}_id`] === row.id || c.workspace_id === row.id
+      )
+      // 多对一：row.{child}_id 指向 child.id
+      if (related.length === 0 && row[`${childSingular}_id`] != null) {
+        related = childRows.filter(c => c.id === row[`${childSingular}_id`])
+      }
+      // 多对一：row.workspace_id 指向 child.id
+      if (related.length === 0 && row.workspace_id != null) {
+        related = childRows.filter(c => c.id === row.workspace_id)
+      }
+      out[name] = related
+    }
+    return out
   }
 }
 
