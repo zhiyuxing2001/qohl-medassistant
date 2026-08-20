@@ -35,6 +35,10 @@ class PathwayIn(BaseModel):
     内容: str = ""
 
 
+class ShortcutsIn(BaseModel):
+    诊断: list[str] = []
+
+
 # ---------------- 模板（多维：文书类型 / 病种 / 模板 + 示例） ----------------
 @router.get("/templates")
 def list_templates():
@@ -149,6 +153,17 @@ def delete_pathway(pathway_id: str):
     if not storage.delete_pathway(pathway_id):
         raise HTTPException(404, "路径不存在")
     return {"ok": True}
+
+
+# ---------------- 诊断快捷键 ----------------
+@router.get("/shortcuts")
+def get_shortcuts():
+    return storage.get_shortcuts()
+
+
+@router.put("/shortcuts")
+def save_shortcuts(data: ShortcutsIn):
+    return storage.save_shortcuts(data.诊断)
 
 
 # ---------------- 脱敏辅助 ----------------

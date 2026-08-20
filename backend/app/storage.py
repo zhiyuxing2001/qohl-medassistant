@@ -571,8 +571,31 @@ class Storage:
                 return p
         return None
 
+    # ---------------- 诊断快捷键 ----------------
+    def _shortcuts_path(self) -> Path:
+        return self.root / "shortcuts.json"
+
+    def get_shortcuts(self) -> list[str]:
+        data = _read_json(self._shortcuts_path()) or {}
+        items = data.get("诊断", [])
+        if not items:
+            items = DEFAULT_SHORTCUTS
+            self.save_shortcuts(items)
+        return items
+
+    def save_shortcuts(self, items: list[str]) -> list[str]:
+        cleaned = [str(x).strip() for x in items if str(x).strip()]
+        _write_json(self._shortcuts_path(), {"诊断": cleaned})
+        return cleaned
+
 
 # ---------------------------------------------------------------- 默认注册表
+DEFAULT_SHORTCUTS = [
+    "急性胰腺炎", "胆囊结石", "结肠息肉", "结肠肿瘤", "上消化道出血",
+    "肝硬化", "胃溃疡", "阑尾炎", "肺炎", "高血压", "糖尿病", "冠心病",
+]
+
+
 def default_registry() -> list[dict]:
     """MVP 文书类型注册表（阶段/顺序/模板/所需要素）。"""
     return [

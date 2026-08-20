@@ -187,3 +187,11 @@ def test_pathways_and_free_compose():
 
     # 删除路径
     assert client.delete(f"/api/pathways/{pid_}").status_code == 200
+
+    # 诊断快捷键
+    r = client.get("/api/shortcuts")
+    assert r.status_code == 200
+    assert len(r.json()) > 0
+    r = client.put("/api/shortcuts", json={"诊断": ["急性胰腺炎", "阑尾炎"]})
+    assert r.status_code == 200
+    assert r.json() == ["急性胰腺炎", "阑尾炎"]
