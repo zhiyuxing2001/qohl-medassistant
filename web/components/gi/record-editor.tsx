@@ -281,8 +281,8 @@ export function RecordEditor({
         <div className="flex items-center gap-3">
           <button
             className="hover:bg-accent rounded-md p-1.5"
-            onClick={() => router.push(`/gi/${pid}`)}
-            title="返回患者"
+            onClick={() => router.push(`/gi?pid=${pid}`)}
+            title="返回"
           >
             <IconArrowLeft size={18} />
           </button>

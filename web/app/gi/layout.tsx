@@ -13,14 +13,14 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#000000"
+  themeColor: "#ffffff"
 }
 
 export default function GILayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers attribute="class" defaultTheme="dark">
+        <Providers attribute="class" defaultTheme="light">
           <Toaster richColors position="top-center" duration={3000} />
           <div className="bg-background text-foreground flex h-dvh flex-col overflow-hidden">
             {children}

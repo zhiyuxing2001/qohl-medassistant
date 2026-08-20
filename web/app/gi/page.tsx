@@ -1,7 +1,12 @@
 "use client"
 
-import { PatientList } from "@/components/gi/patient-list"
+import { Workbench } from "@/components/gi/workbench"
+import { Suspense } from "react"
 
 export default function GIHome() {
-  return <PatientList />
+  return (
+    <Suspense fallback={<div className="text-muted-foreground p-8 text-center">加载中…</div>}>
+      <Workbench />
+    </Suspense>
+  )
 }

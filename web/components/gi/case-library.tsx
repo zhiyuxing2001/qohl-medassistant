@@ -13,12 +13,10 @@ import {
   Visit
 } from "@/lib/api"
 import {
-  IconArrowLeft,
   IconChevronDown,
   IconFileDownload,
   IconFilePlus,
-  IconReportMedical,
-  IconStethoscope
+  IconReportMedical
 } from "@tabler/icons-react"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -31,26 +29,36 @@ function typeName(code: string, templates: Template[]) {
   return templates.find(t => t.code === code)?.name || code
 }
 
-export function PatientDetail({ pid }: { pid: string }) {
+export function CaseLibrary({
+  pid,
+  patients,
+  templates,
+  onSelectPatient
+}: {
+  pid: string | null
+  patients: Patient[]
+  templates: Template[]
+  onSelectPatient: (pid: string) => void
+}) {
   const router = useRouter()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [visits, setVisits] = useState<Visit[]>([])
   const [visit, setVisit] = useState<Visit | null>(null)
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
-  const [templates, setTemplates] = useState<Template[]>([])
   const [tab, setTab] = useState<"records" | "materials" | "suggestions">("records")
   const [showCreate, setShowCreate] = useState(false)
   const [ready, setReady] = useState(false)
 
   const load = useCallback(async () => {
+    if (!pid) {
+      setReady(true)
+      return
+    }
+    setReady(false)
     try {
-      const [p, ts] = await Promise.all([
-        api.get<Patient>(`/api/patients/${pid}`),
-        api.get<Template[]>("/api/templates")
-      ])
+      const p = await api.get<Patient>(`/api/patients/${pid}`)
       setPatient(p)
-      setTemplates(ts)
       const vs = await api.get<Visit[]>(`/api/patients/${pid}/visits`)
       setVisits(vs)
       setVisit(vs[0] || null)
@@ -61,6 +69,9 @@ export function PatientDetail({ pid }: { pid: string }) {
         ])
         setDocuments(ds)
         setTimeline(tl)
+      } else {
+        setDocuments([])
+        setTimeline([])
       }
     } catch (e: any) {
       toast.error(e.message || "加载失败")
@@ -74,6 +85,7 @@ export function PatientDetail({ pid }: { pid: string }) {
   }, [load])
 
   const switchVisit = async (vid: string) => {
+    if (!pid) return
     const v = visits.find(x => x.visit_id === vid) || null
     setVisit(v)
     if (v) {
@@ -83,6 +95,22 @@ export function PatientDetail({ pid }: { pid: string }) {
       ])
       setDocuments(ds)
       setTimeline(tl)
+    }
+  }
+
+  const newVisit = async () => {
+    if (!pid) return
+    try {
+      const v = await api.post<Visit>(`/api/patients/${pid}/visits`, {
+        状态: "住院中",
+        入院日期: new Date().toISOString().slice(0, 10)
+      })
+      const vs = await api.get<Visit[]>(`/api/patients/${pid}/visits`)
+      setVisits(vs)
+      setVisit(v)
+      toast.success("已创建住院记录，请在「患者与住院」中完善信息")
+    } catch (e: any) {
+      toast.error(e.message || "创建住院记录失败")
     }
   }
 
@@ -97,17 +125,22 @@ export function PatientDetail({ pid }: { pid: string }) {
   const activeTemplates = templates.filter(t => t.is_active)
   const hasAdmission = documents.some(d => d.doc_type === "admission")
 
-  // 精简检验检查结果：异常检验优先，附影像/内镜结论
   const conciseResults = useMemo(() => {
     const labs = timeline.filter(x => x.kind === "labs").map(x => x.item)
     const abnormal = labs.filter(l => l.异常标志).slice(-10)
-    const imaging = timeline.filter(x => x.kind === "imaging" || x.kind === "endoscopy").slice(-3)
+    const imaging = timeline
+      .filter(x => x.kind === "imaging" || x.kind === "endoscopy")
+      .slice(-3)
     return { abnormal, imaging }
   }, [timeline])
 
   const exportAll = () => {
-    if (!visit) return
+    if (!pid || !visit) return
     window.location.href = `${GI_API_BASE}/api/patients/${pid}/visits/${visit.visit_id}/export-all`
+  }
+
+  if (!pid) {
+    return <Empty text="请先在「患者列表」选择一位患者" />
   }
 
   if (!ready) {
@@ -116,27 +149,20 @@ export function PatientDetail({ pid }: { pid: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* 头部 */}
-      <header className="flex items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-3">
-          <button
-            className="hover:bg-accent rounded-md p-1.5"
-            onClick={() => router.push("/gi")}
-            title="返回患者列表"
+      {/* 顶部工具条 */}
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <div className="flex items-center gap-2">
+          <select
+            className={inputCls + " w-auto"}
+            value={pid}
+            onChange={e => onSelectPatient(e.target.value)}
           >
-            <IconArrowLeft size={18} />
-          </button>
-          <IconStethoscope size={20} />
-          <div>
-            <div className="text-base font-semibold">
-              {patient?.脱敏编号 || patient?.patient_id}
-              <span className="text-muted-foreground ml-2 text-sm font-normal">
-                {[patient?.性别, patient?.年龄 ? `${patient.年龄}岁` : ""]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
-            </div>
-          </div>
+            {patients.map(p => (
+              <option key={p.patient_id} value={p.patient_id}>
+                {p.脱敏编号 || p.patient_id}
+              </option>
+            ))}
+          </select>
           {visits.length > 0 && (
             <select
               className={inputCls + " w-auto"}
@@ -150,6 +176,12 @@ export function PatientDetail({ pid }: { pid: string }) {
               ))}
             </select>
           )}
+          <button
+            onClick={newVisit}
+            className="hover:bg-accent rounded-md border px-3 py-1.5 text-sm"
+          >
+            新建住院
+          </button>
         </div>
         <div className="flex gap-2">
           <div className="flex rounded-md border">
@@ -176,12 +208,10 @@ export function PatientDetail({ pid }: { pid: string }) {
             完整病历导出
           </button>
         </div>
-      </header>
+      </div>
 
-      {/* 内容区 */}
       {tab === "records" && (
         <div className="flex min-h-0 flex-1">
-          {/* 左侧：病历列表 */}
           <div className="flex min-w-0 flex-1 flex-col border-r p-4">
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <div className="relative">
@@ -270,7 +300,6 @@ export function PatientDetail({ pid }: { pid: string }) {
             </div>
           </div>
 
-          {/* 右侧：精简检验检查结果 */}
           <aside className="w-80 shrink-0 overflow-y-auto p-4">
             <SectionTitle>精简检验检查</SectionTitle>
             {conciseResults.abnormal.length === 0 &&

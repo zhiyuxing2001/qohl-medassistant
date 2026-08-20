@@ -1,34 +1,28 @@
 "use client"
 
 import { api, Patient } from "@/lib/api"
-import { IconPlus, IconStethoscope, IconTemplate } from "@tabler/icons-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useCallback, useEffect, useState } from "react"
+import { IconPlus, IconSearch } from "@tabler/icons-react"
+import { useState } from "react"
 import { toast } from "sonner"
 import { Empty, Field, inputCls, textareaCls } from "./ui"
 
-export function PatientList() {
-  const router = useRouter()
-  const [patients, setPatients] = useState<Patient[]>([])
-  const [loading, setLoading] = useState(true)
+export function PatientList({
+  patients,
+  onSelectPatient,
+  onRefreshPatients
+}: {
+  patients: Patient[]
+  onSelectPatient: (p: Patient) => void
+  onRefreshPatients: () => void
+}) {
+  const [kw, setKw] = useState("")
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
 
-  const load = useCallback(async () => {
-    try {
-      setPatients(await api.get<Patient[]>("/api/patients"))
-    } catch (e: any) {
-      toast.error(`后端连接失败：${e.message || e}`)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const filtered = patients.filter(p =>
+    !kw || (p.脱敏编号 || p.patient_id).toLowerCase().includes(kw.toLowerCase())
+  )
 
   const createPatient = async () => {
     setSaving(true)
@@ -46,8 +40,8 @@ export function PatientList() {
       toast.success("已创建患者")
       setShowNew(false)
       setForm({})
-      await load()
-      router.push(`/gi/${p.patient_id}`)
+      onRefreshPatients()
+      onSelectPatient(p)
     } catch (e: any) {
       toast.error(e.message || "创建失败")
     } finally {
@@ -56,33 +50,36 @@ export function PatientList() {
   }
 
   return (
-    <div className="mx-auto flex h-full max-w-4xl flex-col p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <IconStethoscope size={24} />
-          <h1 className="text-xl font-semibold">GI 医疗工作区</h1>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href="/gi/templates"
-            className="hover:bg-accent flex items-center gap-1.5 rounded-md px-3 py-2 text-sm"
-          >
-            <IconTemplate size={18} />
-            模板与示例管理
-          </Link>
-          <button
-            onClick={() => setShowNew(v => !v)}
-            className="bg-primary text-primary-foreground flex items-center gap-1.5 rounded-md px-3 py-2 text-sm"
-          >
-            <IconPlus size={18} />
-            添加患者
-          </button>
+    <div className="flex h-full flex-col p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">患者列表</h2>
+        <button
+          onClick={() => setShowNew(v => !v)}
+          className="bg-primary text-primary-foreground flex items-center gap-1.5 rounded-md px-3 py-2 text-sm"
+        >
+          <IconPlus size={16} />
+          添加患者
+        </button>
+      </div>
+
+      <div className="mb-4">
+        <div className="relative">
+          <IconSearch
+            size={16}
+            className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2"
+          />
+          <input
+            className={inputCls + " pl-9"}
+            placeholder="按脱敏编号搜索患者…"
+            value={kw}
+            onChange={e => setKw(e.target.value)}
+          />
         </div>
       </div>
 
       {showNew && (
         <div className="border-border mb-4 space-y-3 rounded-lg border p-4">
-          <h2 className="text-sm font-semibold">新建患者</h2>
+          <h3 className="text-sm font-semibold">新建患者</h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="脱敏编号 *">
               <input
@@ -149,16 +146,14 @@ export function PatientList() {
         </div>
       )}
 
-      {loading ? (
-        <div className="text-muted-foreground p-8 text-center">加载中…</div>
-      ) : patients.length === 0 ? (
-        <Empty text="暂无患者，点击「添加患者」开始" />
+      {filtered.length === 0 ? (
+        <Empty text={patients.length === 0 ? "暂无患者，点击「添加患者」开始" : "无匹配患者"} />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {patients.map(p => (
+          {filtered.map(p => (
             <button
               key={p.patient_id}
-              onClick={() => router.push(`/gi/${p.patient_id}`)}
+              onClick={() => onSelectPatient(p)}
               className="hover:bg-accent border-border rounded-lg border p-4 text-left transition"
             >
               <div className="text-base font-semibold">
