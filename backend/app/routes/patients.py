@@ -87,3 +87,27 @@ def timeline(pid: str, vid: str):
         items.append({"date": d.get("doc_date", ""), "kind": "document", "item": d})
     items.sort(key=lambda x: str(x["date"]))
     return items
+
+
+# ---------------- 完整病历导出 ----------------
+@router.get("/{pid}/visits/{vid}/export-all")
+def export_all(pid: str, vid: str):
+    from urllib.parse import quote
+    from fastapi.responses import Response
+
+    from ..docx_export import export_all_docx
+
+    patient = storage.get_patient(pid)
+    visit = storage.get_visit(pid, vid)
+    if not patient or not visit:
+        raise HTTPException(404, "患者或住院记录不存在")
+    docs = [d for d in storage.list_documents(pid, vid) if d.get("status") == "已确认"]
+    type_names = {r.get("code"): r.get("name") for r in storage.load_registry()}
+    buf = export_all_docx(patient, visit, docs, type_names)
+    filename = f"完整病历_{patient.get('脱敏编号','') or pid}.docx"
+    disposition = f"attachment; filename=\"record.docx\"; filename*=UTF-8''{quote(filename)}"
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": disposition},
+    )

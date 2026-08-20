@@ -53,13 +53,16 @@ def test_full_flow():
     codes = [t["code"] for t in r.json()]
     assert "admission" in codes
 
-    # 5. 文书生成
+    # 5. 文书生成（含生命体征）
     r = client.post(f"/api/patients/{pid}/visits/{vid}/documents/generate",
-                    json={"doc_type": "admission", "doc_date": "2025-01-01"})
+                    json={"doc_type": "admission", "doc_date": "2025-01-01",
+                          "vitals": {"体温": "37.2℃", "脉搏": "92次/分", "呼吸": "20次/分",
+                                     "血压": "138/86mmHg", "SpO2": "98%", "体重": "72kg"}})
     assert r.status_code == 200, r.text
     doc = r.json()["document"]
     assert doc["status"] == "草稿"
     assert doc["content"]
+    assert doc.get("vitals", {}).get("体温") == "37.2℃"
     assert r.json()["prompt_version"]
     doc_id = doc["doc_id"]
 
@@ -102,6 +105,12 @@ def test_full_flow():
     r = client.get(f"/api/patients/{pid}/visits/{vid}/documents/{doc_id}/export")
     assert r.status_code == 200
     assert r.content[:2] == b"PK"  # docx zip 魔数
+
+    # 10.1 完整病历导出（需已确认文书；doc 当前为草稿态，重新确认后导出）
+    client.post(f"/api/patients/{pid}/visits/{vid}/documents/{doc_id}/confirm")
+    r = client.get(f"/api/patients/{pid}/visits/{vid}/export-all")
+    assert r.status_code == 200, r.text
+    assert r.content[:2] == b"PK"
 
     # 11. 时间线
     r = client.get(f"/api/patients/{pid}/visits/{vid}/timeline")

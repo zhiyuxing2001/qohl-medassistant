@@ -32,10 +32,12 @@ def list_documents(pid: str, vid: str):
 def generate(pid: str, vid: str, req: GenerateRequest):
     doc_date = req.doc_date or date.today().isoformat()
     messages, prompt_version = assemble_draft_messages(
-        storage, pid, vid, req.doc_type, doc_date, req.extra_fields, req.material_ids)
+        storage, pid, vid, req.doc_type, doc_date, req.extra_fields, req.material_ids,
+        vitals=req.vitals)
     text = complete(messages, config.TEMP_DRAFT)
     doc = storage.create_document(pid, vid, req.doc_type, doc_date, text,
-                                  prompt_version=prompt_version, extra=req.extra_fields)
+                                  prompt_version=prompt_version, extra=req.extra_fields,
+                                  vitals=req.vitals)
     labs = storage.list_items(pid, vid, "labs")
     warnings = check_consistency(text, labs)
     return {"document": doc, "warnings": warnings, "prompt_version": prompt_version}
@@ -51,6 +53,8 @@ def edit_content(pid: str, vid: str, doc_id: str, body: dict):
     content = body.get("content", "")
     _get_doc_or_404(pid, vid, doc_id)
     storage.save_revision(pid, vid, doc_id, content, reason="人工编辑")
+    if "vitals" in body:
+        storage.update_document_vitals(pid, vid, doc_id, body.get("vitals") or {})
     return storage.get_document(pid, vid, doc_id)
 
 

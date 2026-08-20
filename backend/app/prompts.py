@@ -111,7 +111,8 @@ def _examples_block(st: Storage, code: str, max_examples: int) -> str:
 
 def assemble_draft_messages(st: Storage, pid: str, vid: str, doc_type: str,
                             doc_date: str, extra_fields: dict, material_ids: Optional[list[str]] = None,
-                            registry_entry: Optional[dict] = None) -> tuple[list[dict], str]:
+                            registry_entry: Optional[dict] = None,
+                            vitals: Optional[dict] = None) -> tuple[list[dict], str]:
     """返回 (messages, prompt_version)。prompt_version = 注册表版本 + 模板/示例签名。"""
     reg = registry_entry or next((r for r in st.load_registry() if r.get("code") == doc_type), None)
     if reg is None:
@@ -128,6 +129,7 @@ def assemble_draft_messages(st: Storage, pid: str, vid: str, doc_type: str,
     materials = _materials_block(st, pid, vid, material_ids)
 
     extra = "\n".join(f"{k}: {v}" for k, v in (extra_fields or {}).items())
+    vitals_line = "  ".join(f"{k}: {v}" for k, v in (vitals or {}).items() if v)
 
     blocks = []
     if template:
@@ -145,6 +147,8 @@ def assemble_draft_messages(st: Storage, pid: str, vid: str, doc_type: str,
         f"体格检查: {visit.get('体格检查','资料未提供')}\n"
         f"入院诊断: {visit.get('入院诊断','资料未提供')}\n出院诊断: {visit.get('出院诊断','资料未提供')}"
     )
+    if vitals_line:
+        blocks.append(f"【生命体征】\n{vitals_line}")
     blocks.append(f"【时间线资料】（截至 {doc_date or '全部'}）\n{timeline or '（无）'}")
     blocks.append(f"【此前已确认文书】\n{prior}")
     if materials:

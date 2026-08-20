@@ -257,7 +257,8 @@ class Storage:
         return doc
 
     def create_document(self, pid: str, vid: str, doc_type: str, doc_date: str,
-                        content: str, prompt_version: str = "", extra: Optional[dict] = None) -> dict:
+                        content: str, prompt_version: str = "", extra: Optional[dict] = None,
+                        vitals: Optional[dict] = None) -> dict:
         doc_id = _new_id()
         d = self._doc_dir(pid, vid, doc_id)
         doc = {
@@ -268,12 +269,23 @@ class Storage:
             "summary": "",
             "prompt_version": prompt_version,
             "extra": extra or {},
+            "vitals": vitals or {},
             "created_at": _now(),
             "updated_at": _now(),
         }
         _write_json(d / "doc.json", doc)
         self._write_revision(pid, vid, doc_id, content, reason="生成", revision_no=1)
         return self.get_document(pid, vid, doc_id)
+
+    def update_document_vitals(self, pid: str, vid: str, doc_id: str, vitals: dict) -> Optional[dict]:
+        d = self._doc_dir(pid, vid, doc_id)
+        doc = _read_json(d / "doc.json")
+        if doc is None:
+            return None
+        doc["vitals"] = vitals or {}
+        doc["updated_at"] = _now()
+        _write_json(d / "doc.json", doc)
+        return doc
 
     def _next_revision_no(self, pid: str, vid: str, doc_id: str) -> int:
         rdir = self._doc_dir(pid, vid, doc_id) / "revisions"
@@ -446,7 +458,7 @@ def default_registry() -> list[dict]:
     """MVP 文书类型注册表（阶段/顺序/模板/所需要素）。"""
     return [
         {"code": "admission", "name": "入院记录", "phase": "入院", "sort": 10,
-         "prompt_file": "admission.md", "required_fields": ["主诉", "现病史", "体格检查", "初步诊断"], "is_active": True},
+         "prompt_file": "admission.md", "required_fields": ["主诉", "现病史", "既往史", "个人史", "家族史", "体格检查", "初步诊断"], "is_active": True},
         {"code": "first_progress", "name": "首次病程记录", "phase": "入院", "sort": 20,
          "prompt_file": "first_progress.md", "required_fields": ["病例特点", "拟诊讨论", "诊疗计划"], "is_active": True},
         {"code": "progress_ward", "name": "查房/日常病程记录", "phase": "日常", "sort": 30,

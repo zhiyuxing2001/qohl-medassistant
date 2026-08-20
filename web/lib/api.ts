@@ -144,11 +144,29 @@ export type DocumentItem = {
   summary?: string
   prompt_version?: string
   extra?: Record<string, string>
+  vitals?: Record<string, string>
   content?: string
   preview?: string
   created_at?: string
   updated_at?: string
   [k: string]: any
+}
+
+export type Material = {
+  material_id: string
+  文件名?: string
+  类型?: string
+  日期?: string
+  解析结果?: Record<string, any>
+  置信度?: number
+  created_at?: string
+  [k: string]: any
+}
+
+export type TimelineItem = {
+  date: string
+  kind: string
+  item: Record<string, any>
 }
 
 export type Suggestion = {

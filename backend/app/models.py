@@ -60,6 +60,7 @@ class MedItem(BaseModel):
 class MaterialIn(BaseModel):
     文件名: str = ""
     类型: str = "lab_pdf"            # lab_pdf / scanned / image / text / other
+    日期: str = ""                   # 临床日期，默认上传当天
     解析结果: dict[str, Any] = {}
     置信度: float = 1.0
 
@@ -68,6 +69,7 @@ class GenerateRequest(BaseModel):
     doc_type: str                    # 注册表 code，如 admission
     doc_date: str = ""               # YYYY-MM-DD，默认今天
     extra_fields: dict[str, str] = {}  # 医生补充要素，如 拟手术方案
+    vitals: dict[str, str] = {}      # 生命体征：体温/脉搏/呼吸/血压/SpO2/体重
     material_ids: list[str] = []     # 挂载材料（生成参考）
 
 
