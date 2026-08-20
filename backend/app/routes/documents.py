@@ -33,7 +33,7 @@ def generate(pid: str, vid: str, req: GenerateRequest):
     doc_date = req.doc_date or date.today().isoformat()
     messages, prompt_version = assemble_draft_messages(
         storage, pid, vid, req.doc_type, doc_date, req.extra_fields, req.material_ids,
-        vitals=req.vitals)
+        vitals=req.vitals, template_variant=req.template_variant)
     text = complete(messages, config.TEMP_DRAFT)
     doc = storage.create_document(pid, vid, req.doc_type, doc_date, text,
                                   prompt_version=prompt_version, extra=req.extra_fields,

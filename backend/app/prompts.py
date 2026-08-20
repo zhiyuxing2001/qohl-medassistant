@@ -99,8 +99,8 @@ def _materials_block(st: Storage, pid: str, vid: str, material_ids: Optional[lis
     return "\n".join(lines)
 
 
-def _examples_block(st: Storage, code: str, max_examples: int) -> str:
-    examples = [e for e in st.list_examples(code) if e.get("is_active") and e.get("anonymized")]
+def _examples_block(st: Storage, code: str, max_examples: int, variant: str = "通用") -> str:
+    examples = [e for e in st.list_examples(code, variant) if e.get("is_active") and e.get("anonymized")]
     if not examples:
         return ""
     lines = []
@@ -112,7 +112,8 @@ def _examples_block(st: Storage, code: str, max_examples: int) -> str:
 def assemble_draft_messages(st: Storage, pid: str, vid: str, doc_type: str,
                             doc_date: str, extra_fields: dict, material_ids: Optional[list[str]] = None,
                             registry_entry: Optional[dict] = None,
-                            vitals: Optional[dict] = None) -> tuple[list[dict], str]:
+                            vitals: Optional[dict] = None,
+                            template_variant: str = "通用") -> tuple[list[dict], str]:
     """返回 (messages, prompt_version)。prompt_version = 注册表版本 + 模板/示例签名。"""
     reg = registry_entry or next((r for r in st.load_registry() if r.get("code") == doc_type), None)
     if reg is None:
@@ -122,8 +123,8 @@ def assemble_draft_messages(st: Storage, pid: str, vid: str, doc_type: str,
 
     patient = st.get_patient(pid) or {}
     visit = st.get_visit(pid, vid) or {}
-    template = st.read_template(doc_type)
-    examples = _examples_block(st, doc_type, config.MAX_EXAMPLES)
+    template = st.read_template(doc_type, template_variant)
+    examples = _examples_block(st, doc_type, config.MAX_EXAMPLES, template_variant)
     timeline = _timeline_block(st, pid, vid, doc_date, config.RECENT_LABS)
     prior = _prior_docs_block(st, pid, vid, doc_date, config.RECENT_DOCS_FULL)
     materials = _materials_block(st, pid, vid, material_ids)
@@ -157,17 +158,17 @@ def assemble_draft_messages(st: Storage, pid: str, vid: str, doc_type: str,
         blocks.append(f"【医生补充要素】\n{extra}")
 
     user = "\n\n".join(blocks) + f"\n\n{task}"
-    prompt_version = f"{prompt_file}@{_sig_of(st, doc_type)}"
+    prompt_version = f"{prompt_file}@{_sig_of(st, doc_type, template_variant)}"
     return [{"role": "system", "content": _load_prompt("system_base.md")},
             {"role": "user", "content": user}], prompt_version
 
 
-def _sig_of(st: Storage, code: str) -> str:
+def _sig_of(st: Storage, code: str, variant: str = "通用") -> str:
     """模板/示例签名，用于 prompt_version 记录与回溯。"""
     import hashlib
     h = hashlib.md5()
-    h.update(st.read_template(code).encode("utf-8"))
-    for e in st.list_examples(code):
+    h.update(st.read_template(code, variant).encode("utf-8"))
+    for e in st.list_examples(code, variant):
         h.update((e.get("example_id", "") + str(e.get("is_active"))).encode("utf-8"))
     return h.hexdigest()[:8]
 

@@ -70,6 +70,7 @@ class GenerateRequest(BaseModel):
     doc_date: str = ""               # YYYY-MM-DD，默认今天
     extra_fields: dict[str, str] = {}  # 医生补充要素，如 拟手术方案
     vitals: dict[str, str] = {}      # 生命体征：体温/脉搏/呼吸/血压/SpO2/体重
+    template_variant: str = "通用"    # 模板病种（如 结肠息肉 / 通用）
     material_ids: list[str] = []     # 挂载材料（生成参考）
 
 

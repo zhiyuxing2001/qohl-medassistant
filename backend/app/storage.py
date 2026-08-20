@@ -402,7 +402,7 @@ class Storage:
         _write_json(path, data)
         return data
 
-    # ---------------- 注册表与模板示例 ----------------
+    # ---------------- 注册表与模板示例（多维：文书类型 / 病种 / 模板） ----------------
     def load_registry(self) -> list[dict]:
         reg = _read_json(self.root / "registry" / "document_types.json", []) or []
         if not reg:
@@ -416,15 +416,25 @@ class Storage:
     def _tpl_dir(self, code: str) -> Path:
         return self.root / "templates" / _safe_name(code)
 
-    def read_template(self, code: str) -> str:
-        p = self._tpl_dir(code) / "template.md"
+    def _tpl_variant_dir(self, code: str, variant: str = "通用") -> Path:
+        return self._tpl_dir(code) / _safe_name(variant or "通用")
+
+    def list_template_variants(self, code: str) -> list[str]:
+        base = self._tpl_dir(code)
+        variants = {"通用"}
+        if base.exists():
+            variants.update(d.name for d in base.iterdir() if d.is_dir())
+        return sorted(variants)
+
+    def read_template(self, code: str, variant: str = "通用") -> str:
+        p = self._tpl_variant_dir(code, variant) / "template.md"
         return p.read_text(encoding="utf-8") if p.exists() else ""
 
-    def write_template(self, code: str, text: str) -> None:
-        _atomic_write(self._tpl_dir(code) / "template.md", text)
+    def write_template(self, code: str, text: str, variant: str = "通用") -> None:
+        _atomic_write(self._tpl_variant_dir(code, variant) / "template.md", text)
 
-    def list_examples(self, code: str) -> list[dict]:
-        base = self._tpl_dir(code) / "examples"
+    def list_examples(self, code: str, variant: str = "通用") -> list[dict]:
+        base = self._tpl_variant_dir(code, variant) / "examples"
         out = []
         if base.exists():
             for f in sorted(base.glob("*.md")):
@@ -434,23 +444,79 @@ class Storage:
                 out.append(meta)
         return out
 
-    def add_example(self, code: str, content: str, source: str = "", anonymized: bool = False) -> dict:
+    def add_example(self, code: str, content: str, source: str = "",
+                    anonymized: bool = False, variant: str = "通用") -> dict:
         ex_id = f"{_ts()}_{_new_id()}"
-        base = self._tpl_dir(code) / "examples"
+        base = self._tpl_variant_dir(code, variant) / "examples"
         _atomic_write(base / f"{ex_id}.md", content)
         meta = {"source": source, "anonymized": anonymized, "is_active": False, "created_at": _now()}
         _write_json(base / f"{ex_id}.json", meta)
         meta["example_id"] = ex_id
         return meta
 
-    def set_example_active(self, code: str, ex_id: str, active: bool) -> Optional[dict]:
-        base = self._tpl_dir(code) / "examples"
+    def set_example_active(self, code: str, ex_id: str, active: bool, variant: str = "通用") -> Optional[dict]:
+        base = self._tpl_variant_dir(code, variant) / "examples"
         meta = _read_json(base / f"{_safe_name(ex_id)}.json")
         if meta is None:
             return None
         meta["is_active"] = bool(active)
         _write_json(base / f"{_safe_name(ex_id)}.json", meta)
         return meta
+
+    # ---------------- 典型病例库（科室 / 病种 / 病例） ----------------
+    def _cases_dir(self) -> Path:
+        return self.root / "cases"
+
+    def list_cases(self) -> list[dict]:
+        """返回树形：{科室: {病种: [case...]}} 的扁平化列表（含路径）。"""
+        out = []
+        base = self._cases_dir()
+        if base.exists():
+            for dept_dir in sorted(base.iterdir()):
+                if not dept_dir.is_dir():
+                    continue
+                for disease_dir in sorted(dept_dir.iterdir()):
+                    if not disease_dir.is_dir():
+                        continue
+                    for f in sorted(disease_dir.glob("*.json")):
+                        c = _read_json(f)
+                        if c is not None:
+                            c.setdefault("case_id", f.stem)
+                            out.append(c)
+        return out
+
+    def get_case(self, case_id: str) -> Optional[dict]:
+        for c in self.list_cases():
+            if c.get("case_id") == case_id:
+                return c
+        return None
+
+    def create_case(self, 科室: str, 病种: str, 标题: str, 内容: str) -> dict:
+        case_id = _new_id()
+        rec = {"case_id": case_id, "科室": 科室, "病种": 病种, "标题": 标题,
+               "内容": 内容, "created_at": _now(), "updated_at": _now()}
+        _write_json(self._cases_dir() / _safe_name(科室) / _safe_name(病种) / f"{case_id}.json", rec)
+        return rec
+
+    def update_case(self, case_id: str, data: dict) -> Optional[dict]:
+        for c in self.list_cases():
+            if c.get("case_id") != case_id:
+                continue
+            rec = {**c, **data, "case_id": case_id, "updated_at": _now()}
+            path = self._cases_dir() / _safe_name(rec.get("科室", "")) / _safe_name(rec.get("病种", "")) / f"{case_id}.json"
+            _write_json(path, rec)
+            return rec
+        return None
+
+    def delete_case(self, case_id: str) -> bool:
+        c = self.get_case(case_id)
+        if not c:
+            return False
+        path = self._cases_dir() / _safe_name(c.get("科室", "")) / _safe_name(c.get("病种", "")) / f"{case_id}.json"
+        if path.exists():
+            path.unlink()
+            return True
+        return False
 
 
 # ---------------------------------------------------------------- 默认注册表

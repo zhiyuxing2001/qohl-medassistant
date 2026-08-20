@@ -128,13 +128,27 @@ def test_anon_and_template():
     assert r.status_code == 200
     assert "已脱敏" in r.json()["text"]
 
-    # 模板示例：未脱敏不可启用
-    r = client.post("/api/templates/admission/examples",
+    # 模板示例（多维：病种=结肠息肉）：未脱敏不可启用
+    r = client.post("/api/templates/admission/variants/结肠息肉/examples",
                     json={"content": "患者张三，男，56岁……", "anonymized": False})
     assert r.status_code == 200
     ex_id = r.json()["example_id"]
-    r = client.post(f"/api/templates/admission/examples/{ex_id}/active", json={"active": True})
+    r = client.post(f"/api/templates/admission/variants/结肠息肉/examples/{ex_id}/active",
+                    json={"active": True})
     assert r.status_code == 400  # 未脱敏禁止启用
 
-    r = client.put("/api/templates/admission/template", json={"text": "一、一般情况\n二、主诉\n"})
+    # 写入病种模板
+    r = client.put("/api/templates/admission/variants/结肠息肉",
+                   json={"text": "一、一般情况\n二、主诉\n"})
+    assert r.status_code == 200
+
+    # 典型病例库 CRUD
+    r = client.post("/api/cases", json={"科室": "消化内科", "病种": "结肠息肉",
+                                        "标题": "结肠息肉内镜治疗", "内容": "病史摘要…"})
+    assert r.status_code == 200, r.text
+    case_id = r.json()["case_id"]
+    r = client.get("/api/cases")
+    assert r.status_code == 200
+    assert any(c["case_id"] == case_id for c in r.json())
+    r = client.delete(f"/api/cases/{case_id}")
     assert r.status_code == 200

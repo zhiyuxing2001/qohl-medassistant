@@ -1,6 +1,7 @@
 "use client"
 
 import { CaseLibrary } from "@/components/gi/case-library"
+import { CasesLibrary } from "@/components/gi/cases-library"
 import { PatientList } from "@/components/gi/patient-list"
 import { Module, Sidebar } from "@/components/gi/sidebar"
 import { TemplatesTab } from "@/components/gi/templates-tab"
@@ -40,8 +41,13 @@ export function Workbench() {
 
   const selectPatient = (pid: string) => {
     setSelectedPid(pid)
-    setModule("cases")
+    setModule("patients")
     router.replace(`/gi?pid=${pid}`)
+  }
+
+  const backToPatients = () => {
+    setSelectedPid(null)
+    router.replace("/gi")
   }
 
   const selectedPatient = patients.find(p => p.patient_id === selectedPid)
@@ -58,21 +64,25 @@ export function Workbench() {
         }
       />
       <main className="min-w-0 flex-1 overflow-auto">
-        {module === "patients" && (
-          <PatientList
-            patients={patients}
-            onSelectPatient={p => selectPatient(p.patient_id)}
-            onRefreshPatients={loadPatients}
-          />
-        )}
-        {module === "cases" && (
-          <CaseLibrary
-            pid={selectedPid}
-            patients={patients}
-            templates={templates}
-            onSelectPatient={selectPatient}
-          />
-        )}
+        {module === "patients" &&
+          (selectedPid ? (
+            <CaseLibrary
+              pid={selectedPid}
+              patients={patients}
+              templates={templates}
+              onSelectPatient={selectPatient}
+              onBack={backToPatients}
+            />
+          ) : (
+            <PatientList
+              patients={patients}
+              onSelectPatient={p => selectPatient(p.patient_id)}
+              onRefreshPatients={loadPatients}
+            />
+          ))}
+
+        {module === "cases" && <CasesLibrary />}
+
         {module === "templates" && (
           <div className="p-6">
             <h2 className="mb-4 text-lg font-semibold">病历模板</h2>

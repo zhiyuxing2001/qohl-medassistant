@@ -34,7 +34,7 @@ export function Sidebar({
     <aside className="bg-card flex w-56 shrink-0 flex-col border-r">
       <div className="flex items-center gap-2 border-b px-4 py-4">
         <IconStethoscope size={22} className="text-primary" />
-        <span className="text-base font-semibold">GI 医疗助手</span>
+        <span className="text-base font-semibold">临床助手</span>
       </div>
 
       <nav className="flex-1 space-y-1 p-2">

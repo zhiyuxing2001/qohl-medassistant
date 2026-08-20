@@ -13,6 +13,7 @@ import {
   Visit
 } from "@/lib/api"
 import {
+  IconArrowLeft,
   IconChevronDown,
   IconFileDownload,
   IconFilePlus,
@@ -33,12 +34,14 @@ export function CaseLibrary({
   pid,
   patients,
   templates,
-  onSelectPatient
+  onSelectPatient,
+  onBack
 }: {
   pid: string | null
   patients: Patient[]
   templates: Template[]
   onSelectPatient: (pid: string) => void
+  onBack?: () => void
 }) {
   const router = useRouter()
   const [patient, setPatient] = useState<Patient | null>(null)
@@ -152,6 +155,15 @@ export function CaseLibrary({
       {/* 顶部工具条 */}
       <div className="flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
+          {onBack && (
+            <button
+              className="hover:bg-accent flex items-center gap-1 rounded-md px-2 py-1.5 text-sm"
+              onClick={onBack}
+            >
+              <IconArrowLeft size={16} />
+              返回患者列表
+            </button>
+          )}
           <select
             className={inputCls + " w-auto"}
             value={pid}

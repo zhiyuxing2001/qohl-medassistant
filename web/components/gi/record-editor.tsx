@@ -62,6 +62,7 @@ export function RecordEditor({
   const [doc, setDoc] = useState<DocumentItem | null>(null)
 
   const [docType, setDocType] = useState(type || "")
+  const [templateVariant, setTemplateVariant] = useState("通用")
   const [docDate, setDocDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [vitals, setVitals] = useState<Record<string, string>>({})
   const [fields, setFields] = useState<Record<string, string>>({})
@@ -163,6 +164,7 @@ export function RecordEditor({
         doc_date: docDate,
         extra_fields: fields,
         vitals,
+        template_variant: templateVariant,
         material_ids: materialIds
       })
       setWarnings(res.warnings)
@@ -294,6 +296,19 @@ export function RecordEditor({
               </span>
             )}
           </span>
+          {template && (template.variants || []).length > 0 && (
+            <select
+              className={inputCls + " w-auto"}
+              value={templateVariant}
+              onChange={e => setTemplateVariant(e.target.value)}
+            >
+              {(template.variants || []).map(v => (
+                <option key={v.病种} value={v.病种}>
+                  模板：{v.病种}
+                </option>
+              ))}
+            </select>
+          )}
           <input
             type="date"
             className={inputCls + " w-auto"}

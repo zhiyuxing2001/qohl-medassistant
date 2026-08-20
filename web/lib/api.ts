@@ -194,8 +194,24 @@ export type Template = {
   prompt_file: string
   required_fields: string[]
   is_active: boolean
+  variants: TemplateVariant[]
+  [k: string]: any
+}
+
+export type TemplateVariant = {
+  病种: string
   template: string
   examples: Example[]
+}
+
+export type CaseItem = {
+  case_id: string
+  科室: string
+  病种: string
+  标题: string
+  内容: string
+  created_at?: string
+  updated_at?: string
   [k: string]: any
 }
 
