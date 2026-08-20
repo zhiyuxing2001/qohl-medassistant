@@ -322,18 +322,9 @@ export function RecordEditor({
             )}
           </span>
           {template && (
-            <select
-              className={inputCls + " w-auto"}
-              value={templateVariant}
-              onChange={e => setTemplateVariant(e.target.value)}
-            >
-              <option value="">自由撰写（无模板）</option>
-              {(template.variants || []).map(v => (
-                <option key={v.病种} value={v.病种}>
-                  模板：{v.病种}
-                </option>
-              ))}
-            </select>
+            <span className="text-muted-foreground rounded-md border px-2 py-1 text-xs">
+              模板：{templateVariant === "" ? "自由撰写" : templateVariant}（自动匹配，可在对话中调整）
+            </span>
           )}
           <input
             type="date"

@@ -8,8 +8,8 @@ import "../[locale]/globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "GI 医疗工作区",
-  description: "AI 消化科医生临床助手"
+  title: "QoHL医疗助手",
+  description: "QoHL 临床医生助手"
 }
 
 export const viewport: Viewport = {
