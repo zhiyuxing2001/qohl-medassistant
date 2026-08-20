@@ -171,7 +171,8 @@ export function CaseLibrary({
           >
             {patients.map(p => (
               <option key={p.patient_id} value={p.patient_id}>
-                {p.脱敏编号 || p.patient_id}
+                {p.姓名 || p.patient_id}
+                {p.病案号 ? `（${p.病案号}）` : ""}
               </option>
             ))}
           </select>

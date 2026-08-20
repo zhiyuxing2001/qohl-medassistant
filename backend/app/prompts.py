@@ -148,7 +148,7 @@ def assemble_draft_messages(st: Storage, pid: str, vid: str, doc_type: str,
         blocks.append(f"【示例】\n{examples}")
     blocks.append(
         f"【患者资料】\n"
-        f"脱敏编号: {patient.get('脱敏编号','')} | 性别: {patient.get('性别','资料未提供')} | "
+        f"姓名: {patient.get('姓名','资料未提供')} | 病案号: {patient.get('病案号','')} | 性别: {patient.get('性别','资料未提供')} | "
         f"年龄: {patient.get('年龄','资料未提供')} | 体重: {patient.get('体重','资料未提供')}kg\n"
         f"过敏史: {patient.get('过敏史','资料未提供')}\n既往史: {patient.get('既往史','资料未提供')}\n"
         f"家族史: {patient.get('家族史','资料未提供')}\n"
@@ -220,7 +220,7 @@ def assemble_plan_messages(st: Storage, pid: str, vid: str, cutoff: str = "",
     prior = _prior_docs_block(st, pid, vid, cutoff, config.RECENT_DOCS_FULL)
     pathway_block = f"【临床路径】\n{pathway_text}\n\n" if pathway_text else ""
     user = (
-        f"【患者资料】\n脱敏编号: {patient.get('脱敏编号','')} | 性别: {patient.get('性别','资料未提供')} | "
+        f"【患者资料】\n姓名: {patient.get('姓名','资料未提供')} | 病案号: {patient.get('病案号','')} | 性别: {patient.get('性别','资料未提供')} | "
         f"年龄: {patient.get('年龄','资料未提供')} | 过敏史: {patient.get('过敏史','资料未提供')}\n"
         f"主诉: {visit.get('主诉','资料未提供')}\n现病史: {visit.get('现病史','资料未提供')}\n"
         f"入院诊断: {visit.get('入院诊断','资料未提供')}\n出院诊断: {visit.get('出院诊断','资料未提供')}\n\n"

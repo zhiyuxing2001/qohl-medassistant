@@ -24,7 +24,9 @@ export function PatientList({
   const [saving, setSaving] = useState(false)
 
   const filtered = patients.filter(p =>
-    !kw || (p.脱敏编号 || p.patient_id).toLowerCase().includes(kw.toLowerCase())
+    !kw ||
+    (p.姓名 || "").toLowerCase().includes(kw.toLowerCase()) ||
+    (p.病案号 || "").toLowerCase().includes(kw.toLowerCase())
   )
 
   useEffect(() => {
@@ -60,7 +62,8 @@ export function PatientList({
     setSaving(true)
     try {
       const p = await api.post<Patient>("/api/patients", {
-        脱敏编号: form["脱敏编号"] || "",
+        姓名: form["姓名"] || "",
+        病案号: form["病案号"] || "",
         性别: form["性别"] || null,
         年龄: form["年龄"] ? Number(form["年龄"]) : null,
         体重: form["体重"] ? Number(form["体重"]) : null,
@@ -111,7 +114,7 @@ export function PatientList({
           />
           <input
             className={inputCls + " pl-9"}
-            placeholder="按脱敏编号搜索患者…"
+            placeholder="按姓名或病案号搜索患者…"
             value={kw}
             onChange={e => setKw(e.target.value)}
           />
@@ -122,12 +125,20 @@ export function PatientList({
         <div className="border-border mb-4 space-y-3 rounded-lg border p-4">
           <h3 className="text-sm font-semibold">新建患者</h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="脱敏编号 *">
+            <Field label="姓名 *">
               <input
                 className={inputCls}
-                placeholder="如 P001"
-                value={form["脱敏编号"] || ""}
-                onChange={e => setForm({ ...form, 脱敏编号: e.target.value })}
+                placeholder="患者姓名"
+                value={form["姓名"] || ""}
+                onChange={e => setForm({ ...form, 姓名: e.target.value })}
+              />
+            </Field>
+            <Field label="病案号">
+              <input
+                className={inputCls}
+                placeholder="病案号"
+                value={form["病案号"] || ""}
+                onChange={e => setForm({ ...form, 病案号: e.target.value })}
               />
             </Field>
             <Field label="性别">
@@ -270,8 +281,13 @@ export function PatientList({
               className="hover:bg-accent border-border rounded-lg border p-4 text-left transition"
             >
               <div className="text-base font-semibold">
-                {p.脱敏编号 || p.patient_id}
+                {p.姓名 || p.patient_id}
               </div>
+              {p.病案号 ? (
+                <div className="text-muted-foreground mt-0.5 text-xs">
+                  病案号：{p.病案号}
+                </div>
+              ) : null}
               <div className="text-muted-foreground mt-1 text-sm">
                 {[p.性别, p.年龄 ? `${p.年龄}岁` : ""].filter(Boolean).join(" · ") ||
                   "—"}

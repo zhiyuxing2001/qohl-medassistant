@@ -21,7 +21,8 @@ D2 = (date.today() - timedelta(days=2)).isoformat()
 
 def main():
     pid = storage.create_patient({
-        "脱敏编号": "DEMO-001",
+        "姓名": "演示患者",
+        "病案号": "DEMO-001",
         "性别": "男",
         "年龄": 56,
         "体重": 72.5,

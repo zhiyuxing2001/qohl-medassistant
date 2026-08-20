@@ -60,7 +60,7 @@ export function Workbench() {
         onSelect={setModule}
         patientLabel={
           selectedPatient
-            ? selectedPatient.脱敏编号 || selectedPid || ""
+            ? selectedPatient.姓名 || selectedPid || ""
             : undefined
         }
       />

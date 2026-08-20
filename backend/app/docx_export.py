@@ -89,7 +89,8 @@ def export_all_docx(patient: dict, visit: dict, docs: list[dict],
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _set_east_asia(title.runs[0], "黑体") if title.runs else None
     for line in [
-        f"患者：{patient.get('脱敏编号','')}（{patient.get('性别','')}，{patient.get('年龄','')}岁）",
+        f"患者：{patient.get('姓名','') or patient.get('脱敏编号','')}（{patient.get('性别','')}，{patient.get('年龄','')}岁）",
+        f"病案号：{patient.get('病案号','') or '—'}",
         f"住院号：{visit.get('住院号','')}",
         f"入院日期：{visit.get('入院日期','')}  出院日期：{visit.get('出院日期','') or '—'}",
         f"入院诊断：{visit.get('入院诊断','') or '—'}",

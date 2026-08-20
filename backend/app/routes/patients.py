@@ -104,7 +104,7 @@ def export_all(pid: str, vid: str):
     docs = [d for d in storage.list_documents(pid, vid) if d.get("status") == "已确认"]
     type_names = {r.get("code"): r.get("name") for r in storage.load_registry()}
     buf = export_all_docx(patient, visit, docs, type_names)
-    filename = f"完整病历_{patient.get('脱敏编号','') or pid}.docx"
+    filename = f"完整病历_{patient.get('姓名','') or patient.get('脱敏编号','') or pid}.docx"
     disposition = f"attachment; filename=\"record.docx\"; filename*=UTF-8''{quote(filename)}"
     return Response(
         content=buf.getvalue(),

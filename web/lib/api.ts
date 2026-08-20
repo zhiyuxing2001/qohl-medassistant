@@ -106,7 +106,9 @@ export const api = {
 // ---------------------------------------------------------------- 类型定义
 export type Patient = {
   patient_id: string
-  脱敏编号: string
+  姓名: string
+  病案号?: string
+  脱敏编号?: string
   性别?: string | null
   年龄?: number | null
   体重?: number | null

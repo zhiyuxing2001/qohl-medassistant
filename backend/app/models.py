@@ -4,7 +4,9 @@ from pydantic import BaseModel, Field
 
 
 class PatientIn(BaseModel):
-    脱敏编号: str = Field(default="", description="脱敏编号，不存真实姓名")
+    姓名: str = ""                    # 患者姓名（检索与展示）
+    病案号: str = ""                  # 患者级病案号（跨住院唯一，检索）
+    脱敏编号: str = Field(default="", description="内部可选字段，界面不展示")
     性别: Optional[str] = None
     年龄: Optional[int] = None
     体重: Optional[float] = None

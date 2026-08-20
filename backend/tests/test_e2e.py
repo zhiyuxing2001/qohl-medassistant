@@ -20,7 +20,7 @@ def test_health():
 
 def test_full_flow():
     # 1. 患者
-    r = client.post("/api/patients", json={"脱敏编号": "P001", "性别": "男", "年龄": 56, "体重": 70,
+    r = client.post("/api/patients", json={"姓名": "张三", "病案号": "P001", "性别": "男", "年龄": 56, "体重": 70,
                                            "过敏史": "青霉素过敏", "既往史": "高血压"})
     assert r.status_code == 200, r.text
     pid = r.json()["patient_id"]
@@ -164,7 +164,7 @@ def test_pathways_and_free_compose():
     assert any(p["pathway_id"] == pid_ for p in r.json())
 
     # 自由撰写：template_variant 为空可生成
-    r = client.post("/api/patients", json={"脱敏编号": "P002", "性别": "男", "年龄": 50})
+    r = client.post("/api/patients", json={"姓名": "李四", "病案号": "P002", "性别": "男", "年龄": 50})
     assert r.status_code == 200
     pid = r.json()["patient_id"]
     r = client.post(f"/api/patients/{pid}/visits", json={"住院号": "V002", "入院日期": "2025-01-01"})
