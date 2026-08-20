@@ -3,6 +3,7 @@
 import { CaseLibrary } from "@/components/gi/case-library"
 import { CasesLibrary } from "@/components/gi/cases-library"
 import { PatientList } from "@/components/gi/patient-list"
+import { PathwaysLibrary } from "@/components/gi/pathways-library"
 import { Module, Sidebar } from "@/components/gi/sidebar"
 import { TemplatesTab } from "@/components/gi/templates-tab"
 import { api, Patient, Template } from "@/lib/api"
@@ -82,6 +83,8 @@ export function Workbench() {
           ))}
 
         {module === "cases" && <CasesLibrary />}
+
+        {module === "pathways" && <PathwaysLibrary />}
 
         {module === "templates" && (
           <div className="p-6">

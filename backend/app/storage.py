@@ -518,6 +518,59 @@ class Storage:
             return True
         return False
 
+    # ---------------- 临床路径（data/pathways/{病种}.json） ----------------
+    def _pathways_dir(self) -> Path:
+        return self.root / "pathways"
+
+    def list_pathways(self) -> list[dict]:
+        out = []
+        base = self._pathways_dir()
+        if base.exists():
+            for f in sorted(base.glob("*.json")):
+                p = _read_json(f)
+                if p is not None:
+                    p.setdefault("pathway_id", f.stem)
+                    out.append(p)
+        return out
+
+    def get_pathway(self, pathway_id: str) -> Optional[dict]:
+        for p in self.list_pathways():
+            if p.get("pathway_id") == pathway_id:
+                return p
+        return None
+
+    def create_pathway(self, 病种: str, 科室: str, 内容: str) -> dict:
+        pathway_id = _new_id()
+        rec = {"pathway_id": pathway_id, "病种": 病种, "科室": 科室, "内容": 内容,
+               "created_at": _now(), "updated_at": _now()}
+        _write_json(self._pathways_dir() / f"{pathway_id}.json", rec)
+        return rec
+
+    def update_pathway(self, pathway_id: str, data: dict) -> Optional[dict]:
+        p = self.get_pathway(pathway_id)
+        if not p:
+            return None
+        rec = {**p, **data, "pathway_id": pathway_id, "updated_at": _now()}
+        _write_json(self._pathways_dir() / f"{pathway_id}.json", rec)
+        return rec
+
+    def delete_pathway(self, pathway_id: str) -> bool:
+        path = self._pathways_dir() / f"{_safe_name(pathway_id)}.json"
+        if path.exists():
+            path.unlink()
+            return True
+        return False
+
+    def match_pathway(self, text: str) -> Optional[dict]:
+        """按病种名匹配临床路径：病种名出现在 text 中，或 text 出现在病种名中。"""
+        if not text:
+            return None
+        for p in self.list_pathways():
+            name = str(p.get("病种", ""))
+            if name and (name in text or text in name):
+                return p
+        return None
+
 
 # ---------------------------------------------------------------- 默认注册表
 def default_registry() -> list[dict]:

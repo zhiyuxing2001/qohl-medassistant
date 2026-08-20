@@ -19,7 +19,11 @@ def list_suggestions(pid: str, vid: str):
 
 @router.post("/suggestions/plan")
 def plan(pid: str, vid: str):
-    messages = assemble_plan_messages(storage, pid, vid)
+    visit = storage.get_visit(pid, vid) or {}
+    diagnosis = f"{visit.get('入院诊断','')} {visit.get('主诉','')}".strip()
+    pathway = storage.match_pathway(diagnosis) if diagnosis else None
+    pathway_text = pathway.get("内容", "") if pathway else None
+    messages = assemble_plan_messages(storage, pid, vid, pathway_text=pathway_text)
     text = complete(messages, config.TEMP_PLAN, json_schema=CARE_PLAN_SCHEMA)
     try:
         data = json.loads(text)

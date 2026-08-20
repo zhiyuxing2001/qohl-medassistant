@@ -31,16 +31,28 @@ def list_documents(pid: str, vid: str):
 @router.post("/generate")
 def generate(pid: str, vid: str, req: GenerateRequest):
     doc_date = req.doc_date or date.today().isoformat()
+    # 解析临床路径：优先按所选病种模板匹配，否则按入院诊断/主诉匹配
+    visit = storage.get_visit(pid, vid) or {}
+    diagnosis = f"{visit.get('入院诊断','')} {visit.get('主诉','')}".strip()
+    pathway = None
+    if req.template_variant and req.template_variant not in ("通用", "自由"):
+        pathway = storage.match_pathway(req.template_variant)
+    if pathway is None and diagnosis:
+        pathway = storage.match_pathway(diagnosis)
+    pathway_text = pathway.get("内容", "") if pathway else None
+
     messages, prompt_version = assemble_draft_messages(
         storage, pid, vid, req.doc_type, doc_date, req.extra_fields, req.material_ids,
-        vitals=req.vitals, template_variant=req.template_variant)
+        vitals=req.vitals, template_variant=req.template_variant,
+        pathway_text=pathway_text)
     text = complete(messages, config.TEMP_DRAFT)
     doc = storage.create_document(pid, vid, req.doc_type, doc_date, text,
                                   prompt_version=prompt_version, extra=req.extra_fields,
                                   vitals=req.vitals)
     labs = storage.list_items(pid, vid, "labs")
     warnings = check_consistency(text, labs)
-    return {"document": doc, "warnings": warnings, "prompt_version": prompt_version}
+    return {"document": doc, "warnings": warnings, "prompt_version": prompt_version,
+            "pathway": (pathway.get("病种") if pathway else None)}
 
 
 @router.get("/{doc_id}")

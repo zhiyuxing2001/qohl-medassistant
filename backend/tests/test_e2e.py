@@ -152,3 +152,38 @@ def test_anon_and_template():
     assert any(c["case_id"] == case_id for c in r.json())
     r = client.delete(f"/api/cases/{case_id}")
     assert r.status_code == 200
+
+
+def test_pathways_and_free_compose():
+    # 临床路径 CRUD
+    r = client.post("/api/pathways", json={"病种": "急性胰腺炎", "科室": "消化内科",
+                                           "内容": "早期禁食补液，恢复期逐步进食"})
+    assert r.status_code == 200, r.text
+    pid_ = r.json()["pathway_id"]
+    r = client.get("/api/pathways")
+    assert any(p["pathway_id"] == pid_ for p in r.json())
+
+    # 自由撰写：template_variant 为空可生成
+    r = client.post("/api/patients", json={"脱敏编号": "P002", "性别": "男", "年龄": 50})
+    assert r.status_code == 200
+    pid = r.json()["patient_id"]
+    r = client.post(f"/api/patients/{pid}/visits", json={"住院号": "V002", "入院日期": "2025-01-01"})
+    assert r.status_code == 200
+    vid = r.json()["visit_id"]
+    r = client.post(f"/api/patients/{pid}/visits/{vid}/documents/generate",
+                    json={"doc_type": "admission", "doc_date": "2025-01-01", "template_variant": ""})
+    assert r.status_code == 200, r.text
+    assert r.json()["document"]["content"]
+
+    # 按病种匹配临床路径注入（诊断含急性胰腺炎）
+    r = client.put(f"/api/patients/{pid}/visits/{vid}",
+                   json={"住院号": "V002", "入院日期": "2025-01-01", "入院诊断": "急性胰腺炎",
+                         "主诉": "上腹痛", "状态": "住院中"})
+    assert r.status_code == 200
+    r = client.post(f"/api/patients/{pid}/visits/{vid}/documents/generate",
+                    json={"doc_type": "admission", "doc_date": "2025-01-02", "template_variant": "通用"})
+    assert r.status_code == 200
+    assert r.json()["pathway"] == "急性胰腺炎"
+
+    # 删除路径
+    assert client.delete(f"/api/pathways/{pid_}").status_code == 200

@@ -22,6 +22,24 @@ import { Field, inputCls, SectionTitle, textareaCls } from "./ui"
 
 const VITAL_FIELDS = ["体温", "脉搏", "呼吸", "血压", "SpO2", "体重"]
 
+// 按入院诊断/主诉自动匹配病种模板
+function autoMatchVariant(t: Template | undefined, v: Visit | null): string {
+  const variants = t?.variants || []
+  const diagnosis = `${v?.入院诊断 || ""} ${v?.主诉 || ""}`
+  for (const x of variants) {
+    const name = x.病种
+    if (!name || name === "通用") continue
+    if (diagnosis.includes(name)) return name
+  }
+  for (const x of variants) {
+    const name = x.病种
+    if (!name || name === "通用") continue
+    const head = name.slice(0, 2)
+    if (head.length >= 2 && diagnosis.includes(head)) return name
+  }
+  return "通用"
+}
+
 // 文书字段 → 患者/住院预填
 function prefill(field: string, p: Patient | null, v: Visit | null): string {
   switch (field) {
@@ -145,6 +163,13 @@ export function RecordEditor({
       setFields(init)
     }
   }, [template, patient, visit, docId, fields])
+
+  // 新建模式：按入院诊断/主诉自动匹配病种模板
+  useEffect(() => {
+    if (!docId && template && visit) {
+      setTemplateVariant(autoMatchVariant(template, visit))
+    }
+  }, [docId, template, visit])
 
   const vid = visit?.visit_id
 
@@ -296,12 +321,13 @@ export function RecordEditor({
               </span>
             )}
           </span>
-          {template && (template.variants || []).length > 0 && (
+          {template && (
             <select
               className={inputCls + " w-auto"}
               value={templateVariant}
               onChange={e => setTemplateVariant(e.target.value)}
             >
+              <option value="">自由撰写（无模板）</option>
               {(template.variants || []).map(v => (
                 <option key={v.病种} value={v.病种}>
                   模板：{v.病种}

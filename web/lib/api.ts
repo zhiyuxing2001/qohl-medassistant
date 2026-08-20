@@ -215,6 +215,16 @@ export type CaseItem = {
   [k: string]: any
 }
 
+export type Pathway = {
+  pathway_id: string
+  病种: string
+  科室?: string
+  内容: string
+  created_at?: string
+  updated_at?: string
+  [k: string]: any
+}
+
 export type Example = {
   example_id: string
   content: string

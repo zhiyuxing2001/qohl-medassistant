@@ -29,6 +29,12 @@ class CaseIn(BaseModel):
     内容: str = ""
 
 
+class PathwayIn(BaseModel):
+    病种: str = ""
+    科室: str = ""
+    内容: str = ""
+
+
 # ---------------- 模板（多维：文书类型 / 病种 / 模板 + 示例） ----------------
 @router.get("/templates")
 def list_templates():
@@ -106,6 +112,42 @@ def update_case(case_id: str, data: CaseIn):
 def delete_case(case_id: str):
     if not storage.delete_case(case_id):
         raise HTTPException(404, "病例不存在")
+    return {"ok": True}
+
+
+# ---------------- 临床路径 ----------------
+@router.get("/pathways")
+def list_pathways():
+    return storage.list_pathways()
+
+
+@router.post("/pathways")
+def create_pathway(data: PathwayIn):
+    if not data.病种.strip():
+        raise HTTPException(400, "病种不能为空")
+    return storage.create_pathway(data.病种, data.科室, data.内容)
+
+
+@router.get("/pathways/{pathway_id}")
+def get_pathway(pathway_id: str):
+    p = storage.get_pathway(pathway_id)
+    if not p:
+        raise HTTPException(404, "路径不存在")
+    return p
+
+
+@router.put("/pathways/{pathway_id}")
+def update_pathway(pathway_id: str, data: PathwayIn):
+    rec = storage.update_pathway(pathway_id, data.model_dump())
+    if not rec:
+        raise HTTPException(404, "路径不存在")
+    return rec
+
+
+@router.delete("/pathways/{pathway_id}")
+def delete_pathway(pathway_id: str):
+    if not storage.delete_pathway(pathway_id):
+        raise HTTPException(404, "路径不存在")
     return {"ok": True}
 
 

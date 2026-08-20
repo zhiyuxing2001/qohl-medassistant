@@ -113,7 +113,8 @@ def assemble_draft_messages(st: Storage, pid: str, vid: str, doc_type: str,
                             doc_date: str, extra_fields: dict, material_ids: Optional[list[str]] = None,
                             registry_entry: Optional[dict] = None,
                             vitals: Optional[dict] = None,
-                            template_variant: str = "通用") -> tuple[list[dict], str]:
+                            template_variant: str = "通用",
+                            pathway_text: Optional[str] = None) -> tuple[list[dict], str]:
     """返回 (messages, prompt_version)。prompt_version = 注册表版本 + 模板/示例签名。"""
     reg = registry_entry or next((r for r in st.load_registry() if r.get("code") == doc_type), None)
     if reg is None:
@@ -123,8 +124,14 @@ def assemble_draft_messages(st: Storage, pid: str, vid: str, doc_type: str,
 
     patient = st.get_patient(pid) or {}
     visit = st.get_visit(pid, vid) or {}
-    template = st.read_template(doc_type, template_variant)
-    examples = _examples_block(st, doc_type, config.MAX_EXAMPLES, template_variant)
+    # 自由撰写（template_variant == ""）：跳过模板与示例，由 AI 自行组织
+    if template_variant == "":
+        template = ""
+        examples = ""
+    else:
+        variant = template_variant or "通用"
+        template = st.read_template(doc_type, variant)
+        examples = _examples_block(st, doc_type, config.MAX_EXAMPLES, variant)
     timeline = _timeline_block(st, pid, vid, doc_date, config.RECENT_LABS)
     prior = _prior_docs_block(st, pid, vid, doc_date, config.RECENT_DOCS_FULL)
     materials = _materials_block(st, pid, vid, material_ids)
@@ -133,6 +140,8 @@ def assemble_draft_messages(st: Storage, pid: str, vid: str, doc_type: str,
     vitals_line = "  ".join(f"{k}: {v}" for k, v in (vitals or {}).items() if v)
 
     blocks = []
+    if pathway_text:
+        blocks.append(f"【临床路径】\n{pathway_text}")
     if template:
         blocks.append(f"【格式模板】\n{template}")
     if examples:
@@ -202,17 +211,20 @@ def assemble_refine_messages(st: Storage, pid: str, vid: str, doc_id: str,
     return msgs
 
 
-def assemble_plan_messages(st: Storage, pid: str, vid: str, cutoff: str = "") -> list[dict]:
-    """诊疗计划：患者 + 时间线 + care_plan 指令（JSON 输出）。"""
+def assemble_plan_messages(st: Storage, pid: str, vid: str, cutoff: str = "",
+                           pathway_text: Optional[str] = None) -> list[dict]:
+    """诊疗计划：患者 + 时间线 + care_plan 指令（JSON 输出）+ 临床路径。"""
     patient = st.get_patient(pid) or {}
     visit = st.get_visit(pid, vid) or {}
     timeline = _timeline_block(st, pid, vid, cutoff, config.RECENT_LABS)
     prior = _prior_docs_block(st, pid, vid, cutoff, config.RECENT_DOCS_FULL)
+    pathway_block = f"【临床路径】\n{pathway_text}\n\n" if pathway_text else ""
     user = (
         f"【患者资料】\n脱敏编号: {patient.get('脱敏编号','')} | 性别: {patient.get('性别','资料未提供')} | "
         f"年龄: {patient.get('年龄','资料未提供')} | 过敏史: {patient.get('过敏史','资料未提供')}\n"
         f"主诉: {visit.get('主诉','资料未提供')}\n现病史: {visit.get('现病史','资料未提供')}\n"
         f"入院诊断: {visit.get('入院诊断','资料未提供')}\n出院诊断: {visit.get('出院诊断','资料未提供')}\n\n"
+        f"{pathway_block}"
         f"【时间线资料】\n{timeline or '（无）'}\n\n"
         f"【此前已确认文书】\n{prior}\n\n"
         f"{_load_prompt('care_plan.md')}"

@@ -3,6 +3,7 @@
 import {
   IconMoon,
   IconReportMedical,
+  IconRoute,
   IconStethoscope,
   IconSun,
   IconTemplate,
@@ -10,12 +11,13 @@ import {
 } from "@tabler/icons-react"
 import { useTheme } from "next-themes"
 
-export type Module = "patients" | "cases" | "templates"
+export type Module = "patients" | "cases" | "templates" | "pathways"
 
 const ITEMS: { key: Module; label: string; icon: any }[] = [
   { key: "patients", label: "患者列表", icon: IconUsers },
   { key: "cases", label: "病例库", icon: IconReportMedical },
-  { key: "templates", label: "病历模板", icon: IconTemplate }
+  { key: "templates", label: "病历模板", icon: IconTemplate },
+  { key: "pathways", label: "临床路径", icon: IconRoute }
 ]
 
 export function Sidebar({
